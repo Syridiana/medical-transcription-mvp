@@ -1,6 +1,6 @@
 'use client';
 
-import { MicrophoneIcon, StopIcon, PlayIcon, PauseIcon } from '@heroicons/react/24/solid';
+import { CircleStop, Mic, Pause, Play, Music } from 'lucide-react';
 
 interface AudioControlsProps {
   status: string;
@@ -19,42 +19,49 @@ export function AudioControls({
   onStopRecording,
   onTogglePlayback,
 }: AudioControlsProps) {
+  const isRecording = status === 'recording';
+  
   return (
-    <div className="flex justify-center gap-4">
-      {status !== 'recording' ? (
+    <div className="flex flex-wrap justify-center gap-4">
+      {!isRecording ? (
         <button
           onClick={onStartRecording}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="button-hover-effect flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-full hover:from-violet-700 hover:to-indigo-700 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-opacity-50"
         >
-          <MicrophoneIcon className="w-5 h-5" />
-          Iniciar Grabación
+          <div className="bg-white/20 rounded-full p-1">
+            <Mic className="w-4 h-4" />
+          </div>
+          <span className="font-medium">Iniciar Grabación</span>
         </button>
       ) : (
         <button
           onClick={onStopRecording}
-          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          className="button-hover-effect flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-full hover:from-red-700 hover:to-pink-700 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 animate-pulse"
         >
-          <StopIcon className="w-5 h-5" />
-          Detener Grabación
+          <div className="bg-white/20 rounded-full p-1">
+            <CircleStop className="w-4 h-4" />
+          </div>
+          <span className="font-medium">Detener Grabación</span>
         </button>
       )}
 
-      {hasAudio && (
+      {hasAudio && !isRecording && (
         <button
           onClick={onTogglePlayback}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          className={`button-hover-effect flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r ${isPlaying ? 'from-teal-600 to-cyan-700' : 'from-teal-500 to-cyan-600'} text-white rounded-full hover:from-teal-600 hover:to-cyan-700 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50`}
         >
-          {isPlaying ? (
-            <>
-              <PauseIcon className="w-5 h-5" />
-              Pausar
-            </>
-          ) : (
-            <>
-              <PlayIcon className="w-5 h-5" />
-              Reproducir
-            </>
-          )}
+          <div className="bg-white/20 rounded-full p-1">
+            {isPlaying ? (
+              <Pause className="w-4 h-4" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
+          </div>
+          <span className="font-medium flex items-center gap-1">
+            {isPlaying ? 'Pausar' : 'Reproducir'} 
+            {isPlaying && <Music className="w-4 h-4 ml-1 animate-pulse" />}
+          </span>
+         
         </button>
       )}
     </div>
