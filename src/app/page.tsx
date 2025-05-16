@@ -1,5 +1,21 @@
-import AudioRecorder from '@/components/AudioRecorder';
+'use client'
+
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
+
+// Importamos AudioRecorder de forma dinámica con ssr: false
+const AudioRecorder = dynamic(
+  () => import('@/components/AudioRecorder'),
+  { ssr: false } // Esto garantiza que solo se cargue en el cliente
+);
+
+// Componente de carga mientras se importa AudioRecorder
+const AudioRecorderLoading = () => (
+  <div className="flex items-center justify-center py-16">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500"></div>
+  </div>
+);
 
 export default function Home() {
   return (
@@ -51,7 +67,9 @@ export default function Home() {
         <div className="relative bg-card rounded-2xl shadow-xl overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-indigo-500/5"></div>
           <div className="relative p-4 sm:p-6">
-            <AudioRecorder />
+            <Suspense fallback={<AudioRecorderLoading />}>
+              <AudioRecorder />
+            </Suspense>
           </div>
         </div>
         
