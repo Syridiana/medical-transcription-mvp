@@ -4,7 +4,7 @@ import Image from 'next/image';
 export default function Home() {
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-6 mb-6">
             <div className="relative inline-block">
@@ -50,7 +50,7 @@ export default function Home() {
         
         <div className="relative bg-card rounded-2xl shadow-xl overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-indigo-500/5"></div>
-          <div className="relative p-6 sm:p-8">
+          <div className="relative p-4 sm:p-6">
             <AudioRecorder />
           </div>
         </div>
