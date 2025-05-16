@@ -9,13 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.16.0",
     "@headlessui/react": "^2.2.3",
     "@heroicons/react": "^2.2.0",
+    "@types/uuid": "^10.0.0",
     "lucide-react": "^0.511.0",
     "next": "15.3.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-media-recorder": "^1.7.1"
+    "react-media-recorder": "^1.7.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

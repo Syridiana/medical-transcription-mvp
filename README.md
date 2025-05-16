@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Google Cloud Storage Integration
+
+This project uses Google Cloud Storage for saving audio recordings. For detailed setup instructions, see [GCP-SETUP.md](GCP-SETUP.md).
+
+### Key Features:
+- Upload audio files directly to GCP Cloud Storage
+- Process audio files for transcription
+- Secure audio storage with proper authentication
+
+### Required Environment Variables
+Create a `.env.local` file with:
+```
+GOOGLE_CLOUD_PROJECT_ID=your-project-id
+GCS_BUCKET_NAME=kiki-medicina
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

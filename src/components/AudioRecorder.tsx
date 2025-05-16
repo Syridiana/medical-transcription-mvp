@@ -10,31 +10,6 @@ import { AudioProgress } from './audio/AudioProgress';
 import { RecordingAnimation } from './audio/RecordingAnimation';
 import { ProcessingAnimation } from './audio/ProcessingAnimation';
 
-// Mock data for testing
-const mockTranscription: TranscriptionResponse = {
-  transcription: {
-    doctor: [
-      "Buenos días, ¿cómo se encuentra hoy?",
-      "Cuénteme un poco más sobre ese dolor de cabeza. ¿Cuándo comenzó?",
-      "¿Ha tomado algún medicamento para aliviarlo?",
-      "Vamos a revisarlo. ¿Ha tenido fiebre o algún otro síntoma asociado?",
-      "Bien, basado en sus síntomas, parece ser una migraña tensional. Le voy a recetar un analgésico y le recomendaría descansar y mantenerse hidratado.",
-      "También sería bueno que limitara el tiempo frente a pantallas por unos días y que intentara técnicas de relajación.",
-      "¿Tiene alguna otra pregunta o preocupación que quiera comentarme?"
-    ],
-    patient: [
-      "Buen día doctor, no muy bien. He tenido un dolor de cabeza bastante fuerte desde ayer.",
-      "Comenzó ayer por la tarde, después del trabajo. Es como una presión en toda la cabeza, especialmente en la parte frontal.",
-      "Tomé un ibuprofeno anoche, pero solo me alivió temporalmente. Esta mañana el dolor volvió.",
-      "No he tenido fiebre, pero sí algo de rigidez en el cuello y me siento más cansado de lo normal. También he estado trabajando muchas horas frente a la computadora esta semana.",
-      "Entiendo doctor. ¿Cree que podría ser algo más grave?",
-      "Lo haré, doctor. ¿Debería volver si el dolor persiste más de algunos días?",
-      "No, creo que eso es todo. Gracias por su tiempo y recomendaciones."
-    ]
-  },
-  summary: "El paciente consulta por cefalea de inicio reciente (24 horas), de tipo tensional, sin fiebre, asociada a rigidez cervical y fatiga. Refiere uso prolongado de pantallas y respuesta parcial a ibuprofeno. Se diagnostica migraña tensional, se indica analgesia, reposo, hidratación, reducción de exposición a pantallas y técnicas de relajación. Se recomienda seguimiento si persisten los síntomas."
-};
-
 export default function AudioRecorder() {
   const [isLoading, setIsLoading] = useState(false);
   const [transcription, setTranscription] = useState<TranscriptionResponse | null>(null);
@@ -45,11 +20,7 @@ export default function AudioRecorder() {
   const [audioDuration, setAudioDuration] = useState(0);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioName, setAudioName] = useState('');
-  const [showMockData, setShowMockData] = useState(false);
-
-  // Usar la transcripción real o la simulada si showMockData está activo
-  const displayTranscription = transcription || (showMockData ? mockTranscription : null);
-
+  
   const { status, startRecording, stopRecording } = useReactMediaRecorder({
     audio: true,
     onStop: (blobUrl, blob) => {
@@ -147,31 +118,43 @@ export default function AudioRecorder() {
     setIsLoading(true);
     setError(null);
     try {
-      // Para desarrollo/demostración
-      setShowMockData(true);
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1500);
-      
-      // Comentado para desarrollo/demostración
-      /*
+      // Primero, subir el archivo a Google Cloud Storage
       const formData = new FormData();
       formData.append('audio', audioFile);
 
-      const response = await fetch('/api/transcribe', {
+      const uploadResponse = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Error en el procesamiento del audio');
+      if (!uploadResponse.ok) {
+        throw new Error('Error al subir el archivo de audio');
+      }
 
-      const data = await response.json();
-      setTranscription(data);
+      const uploadData = await uploadResponse.json();
+      const audioUrl = uploadData.url;
+      
+      console.log(`Archivo subido exitosamente: ${audioUrl}`);
+
+      // Luego, enviar la URL del audio a la API de transcripción
+      const transcribeResponse = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ audioUrl }),
+      });
+
+      if (!transcribeResponse.ok) {
+        throw new Error('Error en el procesamiento del audio');
+      }
+
+      const transcriptionData = await transcribeResponse.json();
+      setTranscription(transcriptionData);
       setIsLoading(false);
-      */
     } catch (error) {
       console.error('Error:', error);
-      setError('Hubo un error al procesar el audio. Por favor, intenta nuevamente.');
+      setError(`Hubo un error al procesar el audio: ${(error as Error).message}`);
       setTranscription(null);
       setIsLoading(false);
     }
@@ -250,7 +233,7 @@ export default function AudioRecorder() {
             <TranscriptionDisplay
               isLoading={isLoading}
               error={error}
-              transcription={displayTranscription}
+              transcription={transcription}
               hasAudioFile={!!audioFile}
             />
           )}
