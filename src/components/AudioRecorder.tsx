@@ -5,9 +5,10 @@ import { useReactMediaRecorder } from 'react-media-recorder';
 import { AudioControls } from './audio/AudioControls';
 import { FileUpload } from './audio/FileUpload';
 import { TranscriptionDisplay } from './audio/TranscriptionDisplay';
-import { Summary } from './audio/Summary';
 import { TranscriptionResponse } from './audio/types';
 import { AudioProgress } from './audio/AudioProgress';
+import { RecordingAnimation } from './audio/RecordingAnimation';
+import { ProcessingAnimation } from './audio/ProcessingAnimation';
 
 export default function AudioRecorder() {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,7 +20,8 @@ export default function AudioRecorder() {
   const [audioDuration, setAudioDuration] = useState(0);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioName, setAudioName] = useState('');
-
+  const [processingStep, setProcessingStep] = useState<string>('');
+  
   const { status, startRecording, stopRecording } = useReactMediaRecorder({
     audio: true,
     onStop: (blobUrl, blob) => {
@@ -33,6 +35,7 @@ export default function AudioRecorder() {
   const setupAudioElement = (blobUrl: string) => {
     const audio = new Audio(blobUrl);
     
+    // Asegurar que se tenga la duración correcta
     audio.addEventListener('loadedmetadata', () => {
       if (!isNaN(audio.duration) && isFinite(audio.duration)) {
         setAudioDuration(audio.duration);
@@ -50,6 +53,7 @@ export default function AudioRecorder() {
       }
     });
     
+    // Actualizar el progreso de forma más suave
     audio.addEventListener('timeupdate', () => {
       if (!isNaN(audio.currentTime) && isFinite(audio.currentTime)) {
         requestAnimationFrame(() => {
@@ -110,36 +114,101 @@ export default function AudioRecorder() {
   };
 
   const handleSubmit = async () => {
+    console.log('handleSubmit iniciado');
+    console.log('Estado del audioFile:', audioFile ? `Archivo presente (${audioFile.name})` : 'No hay archivo');
+
     if (!audioFile) return;
 
     setIsLoading(true);
     setError(null);
+    setProcessingStep('upload');
+    
     try {
+      // Primer paso: Subir el archivo a Google Cloud Storage
+      console.log('Subiendo archivo a Google Cloud Storage...');
       const formData = new FormData();
       formData.append('audio', audioFile);
 
-      const response = await fetch('/api/transcribe', {
+      const uploadResponse = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
-      if (!response.ok) throw new Error('Error en el procesamiento del audio');
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(`Error al subir el archivo: ${errorData.error || uploadResponse.statusText}`);
+      }
 
-      const data = await response.json();
-      setTranscription(data);
-    } catch (error) {
-      console.error('Error:', error);
-      setError('Hubo un error al procesar el audio. Por favor, intenta nuevamente.');
-      setTranscription(null);
-    } finally {
+      const uploadData = await uploadResponse.json();
+      const audioUrl = uploadData.url;
+      
+      console.log(`Archivo subido exitosamente: ${audioUrl}`);
+      
+      // Actualizar estado con la URL del archivo
+      setTranscription({
+ /*        url: audioUrl, */
+        status: 'uploaded',
+        transcription: {
+          doctor: [],
+          patient: []
+        },
+        summary: "",
+        message: 'Archivo subido exitosamente',
+      });
+      
+      // Iniciar el procesamiento con los pasos múltiples
+      setProcessingStep('transcription');
+      console.log('Iniciando transcripción...');
+      
+      // Breve pausa para mostrar el cambio de estado en la UI
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const transcribeResponse = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ audioUrl: audioUrl }),
+      });
+      
+      if (!transcribeResponse.ok) {
+        const errorData = await transcribeResponse.json();
+        throw new Error(`Error en la transcripción: ${errorData.error || transcribeResponse.statusText}`);
+      }
+      
+      // Simular paso adicional de procesamiento de template para la UI
+      setProcessingStep('template');
+      console.log('Generando resumen clínico...');
+      
+      // Pausa adicional para mostrar el cambio de estado en la UI
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const transcriptionData = await transcribeResponse.json();
+      console.log('Procesamiento completo:', transcriptionData);
+      
+      // Actualizar el estado con la transcripción recibida
+      setTranscription({
+        ...transcriptionData,
+     /*    url: audioUrl, */
+        status: 'completed'
+      });
+      
       setIsLoading(false);
+      setProcessingStep('');
+      
+    } catch (error) {
+      console.error('Error completo:', error);
+      setError(`Error: ${(error as Error).message}`);
+      setTranscription(null);
+      setIsLoading(false);
+      setProcessingStep('');
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="flex flex-col lg:flex-row gap-6">
       {/* Columna izquierda: Controles de audio */}
-      <div className="space-y-8">
+      <div className="lg:w-1/4">
         <div className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
           <h2 className="text-xl font-semibold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600 inline-block">Grabación de Audio</h2>
           
@@ -176,17 +245,23 @@ export default function AudioRecorder() {
             {audioFile && (
               <div className="flex justify-center pt-4">
                 <button
-                  onClick={handleSubmit}
+                  type="button"
+                  onClick={() => {
+                    console.log('Botón clickeado');
+                    handleSubmit();
+                  }}
                   disabled={isLoading}
-                  className="button-hover-effect flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full hover:from-green-600 hover:to-emerald-700 transition-all shadow-md disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                  className="button-hover-effect flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full hover:from-green-600 hover:to-emerald-700 transition-all shadow-md disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 text-sm cursor-pointer"
                 >
                   {isLoading ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin -ml-1 mr-2 h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Procesando...
+                      {processingStep === 'upload' ? 'Subiendo archivo...' : 
+                      processingStep === 'transcription' ? 'Procesando transcripción...' : 
+                      'Procesando...'}
                     </>
                   ) : (
                     <span className="font-medium">Procesar Audio</span>
@@ -196,23 +271,23 @@ export default function AudioRecorder() {
             )}
           </div>
         </div>
-
-        {transcription && (
-          <div className="transition-all duration-500 transform animate-fade-in-up">
-            <Summary summary={transcription.summary} />
-          </div>
-        )}
       </div>
 
       {/* Columna derecha: Estados y Transcripción */}
-      <div>
-        <div className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 sticky top-4">
-          <TranscriptionDisplay
-            isLoading={isLoading}
-            error={error}
-            transcription={transcription}
-            hasAudioFile={!!audioFile}
-          />
+      <div className="lg:w-3/4">
+        <div className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 sticky top-4 h-full flex flex-col justify-center">
+          {status === 'recording' ? (
+            <RecordingAnimation />
+          ) : isLoading ? (
+            <ProcessingAnimation currentStep={processingStep} />
+          ) : (
+            <TranscriptionDisplay
+              isLoading={isLoading}
+              error={error}
+              transcription={transcription}
+              hasAudioFile={!!audioFile}
+            />
+          )}
         </div>
       </div>
     </div>

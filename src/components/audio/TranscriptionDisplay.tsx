@@ -1,104 +1,177 @@
 'use client';
 
+import { useState } from 'react';
 import { TranscriptionResponse } from './types';
-import { FileText, Mic, TriangleAlert } from 'lucide-react';
+import { Summary } from './Summary';
 
-interface TranscriptionDisplayProps {
+type TranscriptionDisplayProps = {
   isLoading: boolean;
   error: string | null;
   transcription: TranscriptionResponse | null;
   hasAudioFile: boolean;
-}
+};
 
-export function TranscriptionDisplay({
-  isLoading,
-  error,
-  transcription,
-  hasAudioFile,
-}: TranscriptionDisplayProps) {
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="relative w-16 h-16">
-          <div className="absolute inset-0 rounded-full border-4 border-violet-100 dark:border-violet-900/20"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-violet-600 dark:border-t-violet-400 animate-spin"></div>
-        </div>
-        <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-6">Procesando audio...</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Esto puede tomar unos momentos</p>
-      </div>
-    );
-  }
+type TabType = 'transcription' | 'summary';
+
+export function TranscriptionDisplay({  error, transcription, hasAudioFile }: TranscriptionDisplayProps) {
+  const [activeTab, setActiveTab] = useState<TabType>('transcription');
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="p-4 bg-red-100 dark:bg-red-900/20 rounded-full mb-4">
-          <TriangleAlert className="w-10 h-10 text-red-600 dark:text-red-400" />
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <div className="h-12 w-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </div>
-        <p className="text-lg font-semibold text-red-600 dark:text-red-400 mb-2">Error</p>
-        <p className="text-gray-600 dark:text-gray-400 max-w-md">{error}</p>
+        <p className="text-red-500 font-medium">{error}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Por favor, intenta nuevamente</p>
       </div>
     );
   }
 
-  if (transcription) {
+  if (!hasAudioFile) {
     return (
-      <>
-        <h2 className="text-xl font-semibold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600 inline-block">Transcripción</h2>
-        <div className="space-y-6 max-h-[calc(100vh-12rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 pr-2">
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/10 dark:to-blue-800/10 p-4 rounded-xl">
-            <h3 className="font-medium text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></span>
-              Doctor:
-            </h3>
-            {transcription.transcription.doctor.map((text, index) => (
-              <p key={index} className="text-gray-700 dark:text-gray-300 mb-2 pl-4 border-l-2 border-blue-200 dark:border-blue-800">{text}</p>
-            ))}
-          </div>
-          
-          <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/10 dark:to-green-800/10 p-4 rounded-xl">
-            <h3 className="font-medium text-green-600 dark:text-green-400 mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-600 dark:bg-green-400"></span>
-              Paciente:
-            </h3>
-            {transcription.transcription.patient.map((text, index) => (
-              <p key={index} className="text-gray-700 dark:text-gray-300 mb-2 pl-4 border-l-2 border-green-200 dark:border-green-800">{text}</p>
-            ))}
-          </div>
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
         </div>
-      </>
-    );
-  }
-
-  if (hasAudioFile) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="p-5 bg-blue-100 dark:bg-blue-900/20 rounded-full mb-5 animate-pulse">
-          <FileText className="w-10 h-10 text-blue-600 dark:text-blue-400" />
-        </div>
-        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-3">Audio Listo para Procesar</h2>
-        <p className="text-gray-600 dark:text-gray-400 max-w-md">
-          Haz click en el botón Procesar Audio para comenzar la transcripción
-        </p>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Bienvenido a la Transcripción Médica</h3>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">Graba una conversación o sube un archivo de audio para comenzar</p>
       </div>
     );
   }
 
+  if (!transcription) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <div className="h-12 w-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Audio Listo</h3>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">Presiona &ldquo;Procesar Audio&rdquo; para generar la transcripción</p>
+      </div>
+    );
+  }
+
+  // Verificar si la transcripción está vacía
+  const hasTranscriptionContent = !!(
+    (transcription.transcription?.doctor && transcription.transcription.doctor.length > 0) || 
+    (transcription.transcription?.patient && transcription.transcription.patient.length > 0) || 
+    (transcription.summary && transcription.summary.length > 0) ||
+    (transcription.raw_transcription && transcription.raw_transcription.length > 0)
+  );
+
+  if (!hasTranscriptionContent) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <div className="h-12 w-12 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Sin Resultados</h3>
+        <p className="text-gray-500 dark:text-gray-400 mt-2">No se pudo generar una transcripción para este audio</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">El servicio de transcripción está en proceso de integración</p>
+      </div>
+    );
+  }
+
+  // Sistema de pestañas para la transcripción
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="relative">
-        <div className="absolute -inset-4 bg-gradient-to-r from-violet-400/20 to-indigo-400/20 rounded-full blur-xl opacity-70 animate-pulse"></div>
-        <div className="p-5 bg-gray-100 dark:bg-gray-800/40 rounded-full mb-5 relative">
-          <Mic className="w-10 h-10 text-gray-500 dark:text-gray-400" />
-        </div>
+    <div className='h-full'>
+      {/* Tabs */}
+      <div className="flex space-x-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => setActiveTab('transcription')}
+          className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-all duration-200 focus:outline-none cursor-pointer
+          ${activeTab === 'transcription' 
+            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' 
+            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50'}`}
+        >
+          Transcripción
+        </button>
+        
+        <button
+          onClick={() => setActiveTab('summary')}
+          className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-all duration-200 focus:outline-none cursor-pointer
+          ${activeTab === 'summary' 
+            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md' 
+            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50'}`}
+        >
+          Resumen Médico
+        </button>
       </div>
-      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-3">Esperando Audio</h2>
-      <p className="text-gray-600 dark:text-gray-400 max-w-md">
-        Graba un nuevo audio o sube un archivo existente para comenzar
-      </p>
-      <p className="text-sm text-gray-500 dark:text-gray-500 mt-4 bg-gray-100/50 dark:bg-gray-800/30 px-3 py-1.5 rounded-full inline-block">
-        Formatos soportados: WAV, MP3, M4A
-      </p>
+
+      {/* Tab Content */}
+      {activeTab === 'transcription' && transcription.transcription?.doctor && transcription.transcription?.patient ? (
+        <div className="space-y-8 animate-fade-in-up">
+          <h2 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 inline-block">Transcripción de la Consulta</h2>
+          
+          <div className="space-y-6">
+            {transcription.transcription.doctor.map((doctorText, index) => {
+              const patientText = transcription.transcription?.patient?.[index] || '';
+              
+              return (
+                <div key={index} className="space-y-4 pb-4 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+                  {/* Número de intercambio */}
+                  <div className="flex justify-center">
+                    <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs rounded-full">
+                      Intercambio {index + 1}
+                    </span>
+                  </div>
+                  
+                  {/* Turno del médico - solo mostrar si hay contenido */}
+                  {doctorText && (
+                    <div className="flex space-x-4 transition-all duration-300 transform hover:translate-x-1">
+                      <div className="flex-shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-2xl rounded-tl-none shadow-sm border border-blue-100 dark:border-blue-900/30">
+                          <div className="font-semibold text-blue-700 dark:text-blue-300 mb-1 text-sm">Doctor</div>
+                          <p className="text-gray-800 dark:text-gray-200 text-sm">{doctorText}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Turno del paciente - solo mostrar si hay contenido */}
+                  {patientText && (
+                    <div className="flex space-x-4 justify-end transition-all duration-300 transform hover:translate-x-[-0.25rem]">
+                      <div className="flex-1">
+                        <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 p-3 rounded-2xl rounded-tr-none shadow-sm border border-purple-100 dark:border-purple-900/30">
+                          <div className="font-semibold text-purple-700 dark:text-purple-300 mb-1 text-sm">Paciente</div>
+                          <p className="text-gray-800 dark:text-gray-200 text-sm">{patientText}</p>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-md">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="animate-fade-in-up">
+          <Summary summary={transcription.summary || ''} />
+        </div>
+      )}
     </div>
   );
 } 
