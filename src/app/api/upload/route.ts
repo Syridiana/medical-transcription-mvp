@@ -6,23 +6,24 @@ import { v4 as uuidv4 } from 'uuid';
 let storage: Storage;
 
 try {
-  // When running in GCP or with Application Default Credentials
-  storage = new Storage();
+  // Usar credenciales explícitas desde variables de entorno
+  const credentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON 
+    ? JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON)
+    : undefined;
   
-  // Alternative initialization with explicit credentials if needed
-  // const credentials = process.env.GOOGLE_CLOUD_CREDENTIALS 
-  //   ? JSON.parse(process.env.GOOGLE_CLOUD_CREDENTIALS)
-  //   : undefined;
+  if (!credentials) {
+    console.warn('No se encontraron credenciales de GCP. Asegúrate de configurar GOOGLE_APPLICATION_CREDENTIALS_JSON');
+  }
   
-  // storage = new Storage({
-  //   projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-  //   credentials
-  // });
+  storage = new Storage({
+    projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+    credentials
+  });
 } catch (error) {
-  console.error('Error initializing Google Cloud Storage:', error);
+  console.error('Error inicializando Google Cloud Storage:', error);
 }
 
-const bucketName = process.env.GCS_BUCKET_NAME || 'kiki-medicina';
+const bucketName = process.env.GCS_BUCKET_NAME || 'modelo-congreso-medicina-temporal';
 
 export async function POST(request: NextRequest) {
   try {

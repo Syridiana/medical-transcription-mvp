@@ -59,10 +59,12 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
   }
 
   // Verificar si la transcripción está vacía
-  const hasTranscriptionContent = 
-    transcription.transcription.doctor.length > 0 || 
-    transcription.transcription.patient.length > 0 || 
-    transcription.summary.length > 0;
+  const hasTranscriptionContent = !!(
+    (transcription.transcription?.doctor && transcription.transcription.doctor.length > 0) || 
+    (transcription.transcription?.patient && transcription.transcription.patient.length > 0) || 
+    (transcription.summary && transcription.summary.length > 0) ||
+    (transcription.raw_transcription && transcription.raw_transcription.length > 0)
+  );
 
   if (!hasTranscriptionContent) {
     return (
@@ -106,34 +108,43 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'transcription' ? (
+      {activeTab === 'transcription' && transcription.transcription?.doctor && transcription.transcription?.patient ? (
         <div className="space-y-8 animate-fade-in-up">
           <h2 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 inline-block">Transcripción de la Consulta</h2>
           
-          <div className="space-y-3">
-            {transcription.transcription.doctor.map((text, index) => {
-              const patientText = transcription.transcription.patient[index];
+          <div className="space-y-6">
+            {transcription.transcription.doctor.map((doctorText, index) => {
+              const patientText = transcription.transcription?.patient?.[index] || '';
               
               return (
-                <div key={index} className="space-y-3">
-                  {/* Turno del médico */}
-                  <div className="flex space-x-4 transition-all duration-300 transform hover:translate-x-1">
-                    <div className="flex-shrink-0">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-2xl rounded-tl-none shadow-sm border border-blue-100 dark:border-blue-900/30">
-                        <div className="font-semibold text-blue-700 dark:text-blue-300 mb-1 text-sm">Doctor</div>
-                        <p className="text-gray-800 dark:text-gray-200 text-sm">{text}</p>
-                      </div>
-                    </div>
+                <div key={index} className="space-y-4 pb-4 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+                  {/* Número de intercambio */}
+                  <div className="flex justify-center">
+                    <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs rounded-full">
+                      Intercambio {index + 1}
+                    </span>
                   </div>
                   
-                  {/* Turno del paciente */}
+                  {/* Turno del médico - solo mostrar si hay contenido */}
+                  {doctorText && (
+                    <div className="flex space-x-4 transition-all duration-300 transform hover:translate-x-1">
+                      <div className="flex-shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-2xl rounded-tl-none shadow-sm border border-blue-100 dark:border-blue-900/30">
+                          <div className="font-semibold text-blue-700 dark:text-blue-300 mb-1 text-sm">Doctor</div>
+                          <p className="text-gray-800 dark:text-gray-200 text-sm">{doctorText}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Turno del paciente - solo mostrar si hay contenido */}
                   {patientText && (
                     <div className="flex space-x-4 justify-end transition-all duration-300 transform hover:translate-x-[-0.25rem]">
                       <div className="flex-1">
@@ -158,7 +169,7 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
         </div>
       ) : (
         <div className="animate-fade-in-up">
-          <Summary summary={transcription.summary} />
+          <Summary summary={transcription.summary || ''} />
         </div>
       )}
     </div>

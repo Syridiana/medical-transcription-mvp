@@ -1,7 +1,12 @@
 export interface TranscriptionResponse {
-  transcription: {
+  transcription?: {
     doctor: string[];
     patient: string[];
   };
-  summary: string;
+  summary?: string;
+  url?: string;
+  status?: 'uploaded' | 'processing' | 'completed' | 'error';
+  message?: string;
+  template?: string;
+  raw_transcription?: string;
 } 

@@ -1,8 +1,12 @@
 'use client';
 
-import { Brain, Cpu, Bot } from 'lucide-react';
+import { Brain, Cpu, Bot, Upload } from 'lucide-react';
 
-export function ProcessingAnimation() {
+interface ProcessingAnimationProps {
+  currentStep?: string;
+}
+
+export function ProcessingAnimation({ currentStep = 'processing' }: ProcessingAnimationProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16">
       <div className="mb-8 relative">
@@ -18,13 +22,23 @@ export function ProcessingAnimation() {
         </div>
       </div>
       
-      <h2 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600 mb-4 text-center animate-pulse-slow">Procesando Consulta</h2>
+      <h2 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600 mb-4 text-center animate-pulse-slow">
+        {currentStep === 'upload' 
+          ? 'Subiendo Audio' 
+          : currentStep === 'transcription' 
+            ? 'Procesando Transcripción'
+            : 'Procesando Consulta'
+        }
+      </h2>
       
       <div className="flex justify-center items-center space-x-6 mb-6">
         <div className="relative flex items-center justify-center">
           <div className="absolute inset-0 bg-violet-400/10 rounded-lg animate-pulse"></div>
           <div className="relative bg-white dark:bg-gray-800 p-2 rounded-lg">
-            <Brain className="w-6 h-6 text-violet-500" />
+            {currentStep === 'upload' 
+              ? <Upload className="w-6 h-6 text-green-500" />
+              : <Brain className="w-6 h-6 text-violet-500" />
+            }
           </div>
           <div className="absolute -right-4 w-4 h-0.5 bg-violet-400/50"></div>
         </div>
@@ -59,16 +73,16 @@ export function ProcessingAnimation() {
       </div>
       
       <div className="mt-2 space-y-2">
-        <div className="flex gap-2 items-center text-gray-600 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-full shadow-sm">
-          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+        <div className={`flex gap-2 items-center text-gray-600 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-full shadow-sm ${currentStep === 'upload' ? 'opacity-100' : 'opacity-50'}`}>
+          <div className={`w-2 h-2 ${currentStep === 'upload' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'} rounded-full`}></div>
+          <p className="text-sm">Subiendo audio</p>
+        </div>
+        <div className={`flex gap-2 items-center text-gray-600 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-full shadow-sm ${currentStep === 'transcription' ? 'opacity-100' : 'opacity-50'}`}>
+          <div className={`w-2 h-2 ${currentStep === 'transcription' ? 'bg-blue-500 animate-pulse' : 'bg-gray-400'} rounded-full`}></div>
           <p className="text-sm">Transcribiendo audio</p>
         </div>
-        <div className="flex gap-2 items-center text-gray-600 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-full shadow-sm">
-          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          <p className="text-sm">Identificando participantes</p>
-        </div>
-        <div className="flex gap-2 items-center text-gray-600 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-full shadow-sm">
-          <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse"></div>
+        <div className={`flex gap-2 items-center text-gray-600 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-full shadow-sm ${currentStep === 'template' ? 'opacity-100' : 'opacity-50'}`}>
+          <div className={`w-2 h-2 ${currentStep === 'template' ? 'bg-violet-500 animate-pulse' : 'bg-gray-400'} rounded-full`}></div>
           <p className="text-sm">Generando resumen clínico</p>
         </div>
       </div>
