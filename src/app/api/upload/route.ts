@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     const originalName = audioFile.name;
     const extension = originalName.split('.').pop() || 'wav';
     const uniqueFilename = `${uuidv4()}.${extension}`;
-    const fileUrl = `models/scriba/${uniqueFilename}`;
+    const fileUrl = `${uniqueFilename}`;
 
 
     // Convert File to Buffer
