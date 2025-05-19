@@ -1,4 +1,4 @@
-FROM node:18-slim AS base
+FROM node:20 AS base
 
 # Stage 1: Install dependencies
 FROM base AS deps
@@ -16,9 +16,9 @@ RUN npm run build
 # Stage 3: Production server
 FROM base AS runner
 WORKDIR /app
-ENV NODE_ENV=production
+# ENV NODE_ENV=production
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/standalone ./ 
 COPY --from=builder /app/.next/static ./.next/static
 
 EXPOSE 3000

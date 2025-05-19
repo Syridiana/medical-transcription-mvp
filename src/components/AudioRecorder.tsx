@@ -129,7 +129,7 @@ export default function AudioRecorder() {
       const formData = new FormData();
       formData.append('audio', audioFile);
 
-/*       const uploadResponse = await fetch('/api/upload', {
+      const uploadResponse = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
@@ -142,7 +142,7 @@ export default function AudioRecorder() {
       const uploadData = await uploadResponse.json();
       const audioUrl = uploadData.url;
       
-      console.log(`Archivo subido exitosamente: ${audioUrl}`); */
+      console.log(`Archivo subido exitosamente: ${audioUrl}`);
       
       // Actualizar estado con la URL del archivo
       setTranscription({
@@ -168,7 +168,7 @@ export default function AudioRecorder() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ audioUrl: "models/scriba/consulta_2.mp3" }),
+        body: JSON.stringify({ audioUrl: audioUrl }),
       });
       
       if (!transcribeResponse.ok) {
