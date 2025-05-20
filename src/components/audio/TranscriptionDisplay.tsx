@@ -19,13 +19,13 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="h-12 w-12 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+        <div className="h-12 w-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
         <p className="text-red-500 font-medium">{error}</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Por favor, intenta nuevamente</p>
+        <p className="text-sm text-gray-500 mt-2">Por favor, intenta nuevamente</p>
       </div>
     );
   }
@@ -33,13 +33,13 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
   if (!hasAudioFile) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
+        <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Bienvenido a la Transcripción Médica</h3>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">Graba una conversación o sube un archivo de audio para comenzar</p>
+        <h3 className="text-lg font-medium text-gray-900">Bienvenido a la Transcripción Médica</h3>
+        <p className="text-gray-500 mt-2">Graba una conversación o sube un archivo de audio para comenzar</p>
       </div>
     );
   }
@@ -47,13 +47,13 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
   if (!transcription) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="h-12 w-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+        <div className="h-12 w-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Audio Listo</h3>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">Presiona &ldquo;Procesar Audio&rdquo; para generar la transcripción</p>
+        <h3 className="text-lg font-medium text-gray-900">Audio Listo</h3>
+        <p className="text-gray-500 mt-2">Presiona &ldquo;Procesar Audio&rdquo; para generar la transcripción</p>
       </div>
     );
   }
@@ -69,29 +69,29 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
   if (!hasTranscriptionContent) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="h-12 w-12 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mb-4">
+        <div className="h-12 w-12 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Sin Resultados</h3>
-        <p className="text-gray-500 dark:text-gray-400 mt-2">No se pudo generar una transcripción para este audio</p>
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">El servicio de transcripción está en proceso de integración</p>
+        <h3 className="text-lg font-medium text-gray-900">Sin Resultados</h3>
+        <p className="text-gray-500 mt-2">No se pudo generar una transcripción para este audio</p>
+        <p className="text-xs text-gray-400 mt-4">El servicio de transcripción está en proceso de integración</p>
       </div>
     );
   }
 
   // Sistema de pestañas para la transcripción
   return (
-    <div className='h-full'>
+    <div className='h-[calc(100vh-22rem)] max-h-[800px] flex flex-col border border-gray-200 rounded-lg overflow-hidden'>
       {/* Tabs */}
-      <div className="flex space-x-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex space-x-2 border-b border-gray-200 flex-shrink-0">
         <button
           onClick={() => setActiveTab('transcription')}
           className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-all duration-200 focus:outline-none cursor-pointer
           ${activeTab === 'transcription' 
             ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' 
-            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50'}`}
+            : 'text-gray-600 hover:bg-gray-100'}`}
         >
           Transcripción
         </button>
@@ -101,7 +101,7 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
           className={`px-4 py-2 font-medium text-sm rounded-t-lg transition-all duration-200 focus:outline-none cursor-pointer
           ${activeTab === 'summary' 
             ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md' 
-            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50'}`}
+            : 'text-gray-600 hover:bg-gray-100'}`}
         >
           Resumen Médico
         </button>
@@ -109,18 +109,16 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
 
       {/* Tab Content */}
       {activeTab === 'transcription' && transcription.transcription?.doctor && transcription.transcription?.patient ? (
-        <div className="space-y-8 animate-fade-in-up">
-          <h2 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 inline-block">Transcripción de la Consulta</h2>
-          
+        <div className="flex-grow overflow-y-auto scrollbar-custom animate-fade-in-up pt-4 pb-2 px-4">
           <div className="space-y-6">
             {transcription.transcription.doctor.map((doctorText, index) => {
               const patientText = transcription.transcription?.patient?.[index] || '';
               
               return (
-                <div key={index} className="space-y-4 pb-4 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+                <div key={index} className="space-y-4 pb-4 border-b border-gray-100 last:border-b-0">
                   {/* Número de intercambio */}
                   <div className="flex justify-center">
-                    <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs rounded-full">
+                    <span className="px-3 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">
                       Intercambio {index + 1}
                     </span>
                   </div>
@@ -136,9 +134,9 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
                         </div>
                       </div>
                       <div className="flex-1">
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-2xl rounded-tl-none shadow-sm border border-blue-100 dark:border-blue-900/30">
-                          <div className="font-semibold text-blue-700 dark:text-blue-300 mb-1 text-sm">Doctor</div>
-                          <p className="text-gray-800 dark:text-gray-200 text-sm">{doctorText}</p>
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-2xl rounded-tl-none shadow-sm border border-blue-100">
+                          <div className="font-semibold text-blue-700 mb-1 text-sm">Doctor</div>
+                          <p className="text-gray-800 text-sm">{doctorText}</p>
                         </div>
                       </div>
                     </div>
@@ -148,9 +146,9 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
                   {patientText && (
                     <div className="flex space-x-4 justify-end transition-all duration-300 transform hover:translate-x-[-0.25rem]">
                       <div className="flex-1">
-                        <div className="bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20 p-3 rounded-2xl rounded-tr-none shadow-sm border border-purple-100 dark:border-purple-900/30">
-                          <div className="font-semibold text-purple-700 dark:text-purple-300 mb-1 text-sm">Paciente</div>
-                          <p className="text-gray-800 dark:text-gray-200 text-sm">{patientText}</p>
+                        <div className="bg-gradient-to-r from-purple-50 to-violet-50 p-3 rounded-2xl rounded-tr-none shadow-sm border border-purple-100">
+                          <div className="font-semibold text-purple-700 mb-1 text-sm">Paciente</div>
+                          <p className="text-gray-800 text-sm">{patientText}</p>
                         </div>
                       </div>
                       <div className="flex-shrink-0">
@@ -168,7 +166,7 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
           </div>
         </div>
       ) : (
-        <div className="animate-fade-in-up">
+        <div className="flex-grow overflow-y-auto scrollbar-custom animate-fade-in-up pt-4">
           <Summary summary={transcription.summary || ''} />
         </div>
       )}

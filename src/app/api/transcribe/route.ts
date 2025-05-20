@@ -30,11 +30,13 @@ export async function POST(request: NextRequest) {
       });
       
       if (!anonymizeResponse.ok) {
-        throw new Error(`Error en la respuesta de anonymize: ${anonymizeResponse.status} ${anonymizeResponse.statusText}`);
+        throw new Error('Error en el proceso de anonimización');
       }
       
       const anonymizeData = await anonymizeResponse.json();
-      console.log('Anonymized audio:', anonymizeData.output.audio);
+      
+      // Construir la URL del audio anonimizado
+      const anonymizedAudioUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${anonymizeData.output.audio}`;
       
       // Step 2: Transcribe 
       console.log('Step 2: Transcribing audio...');
@@ -97,7 +99,15 @@ export async function POST(request: NextRequest) {
         status: 'completed',
       };
       
-      return NextResponse.json(finalResponse);
+      return NextResponse.json({
+        status: 'success',
+        anonymizedAudioUrl,
+        transcription: finalResponse.transcription,
+        summary: finalResponse.summary,
+        template: finalResponse.template,
+        raw_transcription: finalResponse.raw_transcription,
+        status: finalResponse.status
+      });
       
     } catch (fetchError) {
       console.error('Error al conectar con el servicio de transcripción:', fetchError);

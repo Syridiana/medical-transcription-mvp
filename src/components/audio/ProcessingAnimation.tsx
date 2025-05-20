@@ -1,6 +1,6 @@
 'use client';
 
-import { Brain, Cpu, Bot, Upload } from 'lucide-react';
+import { Brain, Cpu, Bot, ShieldCheck } from 'lucide-react';
 
 interface ProcessingAnimationProps {
   currentStep?: string;
@@ -8,7 +8,7 @@ interface ProcessingAnimationProps {
 
 export function ProcessingAnimation({ currentStep = 'processing' }: ProcessingAnimationProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16">
+    <div className="flex flex-col items-center justify-center py-8">
       <div className="mb-8 relative">
         <div className="absolute -inset-4 bg-violet-400/30 animate-pulse-fast rounded-full opacity-75"></div>
         <div className="absolute -inset-8 bg-violet-400/20 animate-pulse rounded-full opacity-60"></div>
@@ -22,21 +22,21 @@ export function ProcessingAnimation({ currentStep = 'processing' }: ProcessingAn
         </div>
       </div>
       
-      <h2 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600 mb-4 text-center animate-pulse-slow">
-        {currentStep === 'upload' 
-          ? 'Subiendo Audio' 
+      <h2 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600 mb-4 mt-4 text-center animate-pulse-slow">
+        {currentStep === 'anonymization' 
+          ? 'Anonimizando Audio' 
           : currentStep === 'transcription' 
             ? 'Procesando Transcripción'
             : 'Procesando Consulta'
         }
       </h2>
       
-      <div className="flex justify-center items-center space-x-6 mb-6">
+      <div className="flex justify-center items-center space-x-6 mb-4">
         <div className="relative flex items-center justify-center">
           <div className="absolute inset-0 bg-violet-400/10 rounded-lg animate-pulse"></div>
-          <div className="relative bg-white dark:bg-gray-800 p-2 rounded-lg">
-            {currentStep === 'upload' 
-              ? <Upload className="w-6 h-6 text-green-500" />
+          <div className="relative bg-white p-2 rounded-lg">
+            {currentStep === 'anonymization' 
+              ? <ShieldCheck className="w-6 h-6 text-emerald-500" />
               : <Brain className="w-6 h-6 text-violet-500" />
             }
           </div>
@@ -45,7 +45,7 @@ export function ProcessingAnimation({ currentStep = 'processing' }: ProcessingAn
         
         <div className="relative flex items-center justify-center">
           <div className="absolute inset-0 bg-indigo-400/10 rounded-lg animate-pulse delay-300"></div>
-          <div className="relative bg-white dark:bg-gray-800 p-2 rounded-lg">
+          <div className="relative bg-white p-2 rounded-lg">
             <Cpu className="w-6 h-6 text-indigo-500" />
           </div>
           <div className="absolute -right-4 w-4 h-0.5 bg-indigo-400/50"></div>
@@ -53,7 +53,7 @@ export function ProcessingAnimation({ currentStep = 'processing' }: ProcessingAn
         
         <div className="relative flex items-center justify-center">
           <div className="absolute inset-0 bg-blue-400/10 rounded-lg animate-pulse delay-700"></div>
-          <div className="relative bg-white dark:bg-gray-800 p-2 rounded-lg">
+          <div className="relative bg-white p-2 rounded-lg">
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               viewBox="0 0 24 24" 
@@ -73,15 +73,15 @@ export function ProcessingAnimation({ currentStep = 'processing' }: ProcessingAn
       </div>
       
       <div className="mt-2 space-y-2">
-        <div className={`flex gap-2 items-center text-gray-600 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-full shadow-sm ${currentStep === 'upload' ? 'opacity-100' : 'opacity-50'}`}>
-          <div className={`w-2 h-2 ${currentStep === 'upload' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'} rounded-full`}></div>
-          <p className="text-sm">Subiendo audio</p>
+        <div className={`flex gap-2 items-center text-gray-600 bg-white/60 px-4 py-2 rounded-full shadow-sm ${currentStep === 'anonymization' ? 'opacity-100' : 'opacity-50'}`}>
+          <div className={`w-2 h-2 ${currentStep === 'anonymization' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'} rounded-full`}></div>
+          <p className="text-sm">Anonimizando audio</p>
         </div>
-        <div className={`flex gap-2 items-center text-gray-600 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-full shadow-sm ${currentStep === 'transcription' ? 'opacity-100' : 'opacity-50'}`}>
+        <div className={`flex gap-2 items-center text-gray-600 bg-white/60 px-4 py-2 rounded-full shadow-sm ${currentStep === 'transcription' ? 'opacity-100' : 'opacity-50'}`}>
           <div className={`w-2 h-2 ${currentStep === 'transcription' ? 'bg-blue-500 animate-pulse' : 'bg-gray-400'} rounded-full`}></div>
           <p className="text-sm">Transcribiendo audio</p>
         </div>
-        <div className={`flex gap-2 items-center text-gray-600 dark:text-gray-300 bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-full shadow-sm ${currentStep === 'template' ? 'opacity-100' : 'opacity-50'}`}>
+        <div className={`flex gap-2 items-center text-gray-600 bg-white/60 px-4 py-2 rounded-full shadow-sm ${currentStep === 'template' ? 'opacity-100' : 'opacity-50'}`}>
           <div className={`w-2 h-2 ${currentStep === 'template' ? 'bg-violet-500 animate-pulse' : 'bg-gray-400'} rounded-full`}></div>
           <p className="text-sm">Generando resumen clínico</p>
         </div>

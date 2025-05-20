@@ -6,10 +6,10 @@ import { AudioControls } from './audio/AudioControls';
 import { FileUpload } from './audio/FileUpload';
 import { TranscriptionDisplay } from './audio/TranscriptionDisplay';
 import { TranscriptionResponse } from './audio/types';
-import { AudioProgress } from './audio/AudioProgress';
 import { RecordingAnimation } from './audio/RecordingAnimation';
 import { ProcessingAnimation } from './audio/ProcessingAnimation';
 import { ConsentModal } from './ConsentModal';
+import { MessageCircleMore, Pause, Play, Music, FileText, X } from 'lucide-react';
 
 export default function AudioRecorder() {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,37 +23,167 @@ export default function AudioRecorder() {
   const [audioName, setAudioName] = useState('');
   const [processingStep, setProcessingStep] = useState<string>('');
   const [showConsentModal, setShowConsentModal] = useState(false);
-  const [showAnonymizeStep, setShowAnonymizeStep] = useState(false);
-  const [isAnonymizing, setIsAnonymizing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [bucketUrl, setBucketUrl] = useState<string>('');
+
+  const formatTime = (time: number) => {
+    if (isNaN(time) || !isFinite(time)) return '0:00';
+    
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   const { status, startRecording, stopRecording } = useReactMediaRecorder({
     audio: true,
     onStop: async (blobUrl, blob) => {
+      console.log('🎤 Grabación detenida, procesando audio...');
       const timestamp = new Date().getTime();
       const audioFileName = `recording_${timestamp}.wav`;
       const file = new File([blob], audioFileName, { type: blob.type });
       
-      // Crear un nuevo elemento de audio temporal para obtener la duración
-      const tempAudio = new Audio(blobUrl);
-      
-      // Esperar a que se carguen los metadatos
-      await new Promise((resolve) => {
-        tempAudio.addEventListener('loadedmetadata', resolve, { once: true });
-        tempAudio.addEventListener('canplay', resolve, { once: true });
-      });
-      
-      // Asegurarnos de tener la duración antes de configurar el audio principal
-      if (!isNaN(tempAudio.duration) && isFinite(tempAudio.duration)) {
-        setAudioDuration(tempAudio.duration);
-      }
-      
+      console.log('📁 Archivo creado:', audioFileName);
       setAudioFile(file);
       setAudioName(audioFileName);
-      setupAudioElement(blobUrl);
+
+      // Subir el archivo inmediatamente
+      await handleUpload(file);
     },
   });
 
+  const handleUpload = async (file: File) => {
+    console.log('📤 Subiendo archivo al bucket...', file.name, file.size, file.type);
+    setIsLoading(true);
+    setProcessingStep('upload');
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('audio', file);
+
+      console.log('🔄 Enviando solicitud a /api/upload');
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('📥 Respuesta recibida:', uploadResponse.status, uploadResponse.statusText);
+      
+      if (!uploadResponse.ok) {
+        let errorMessage = 'Error al subir el archivo';
+        try {
+          const errorData = await uploadResponse.json();
+          errorMessage = `Error: ${errorData.error || uploadResponse.statusText}`;
+        } catch {
+          errorMessage = `Error (${uploadResponse.status}): ${uploadResponse.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const uploadData = await uploadResponse.json();
+      console.log('✅ Archivo subido exitosamente al bucket:', uploadData);
+      
+      if (!uploadData.url) {
+        throw new Error('No se recibió la URL del archivo subido');
+      }
+      
+      setBucketUrl(uploadData.url);
+      
+      // Iniciar proceso de anonimización automáticamente
+      await handleAnonymize(uploadData.url);
+
+    } catch (error) {
+      console.error('❌ Error al subir el archivo:', error);
+      setError(`Error al subir el archivo: ${(error as Error).message}`);
+      setIsLoading(false);
+      setAudioFile(null); // Limpiar el archivo en caso de error
+    }
+  };
+
+  const handleAnonymize = async (audioUrl: string) => {
+    console.log('🎭 Iniciando proceso de anonimización con URL:', audioUrl);
+    setProcessingStep('anonymization');
+
+    try {
+      const response = await fetch('/api/anonymize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ audioUrl }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Error en la anonimización: ${errorData.error || response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✨ Audio anonimizado:', data);
+
+      if (data.anonymizedAudioUrl) {
+        console.log('🎵 Descargando audio anonimizado:', data.anonymizedAudioUrl);
+        const proxyUrl = `/api/audio?url=${encodeURIComponent(data.anonymizedAudioUrl)}`;
+        const audioResponse = await fetch(proxyUrl);
+        
+        if (!audioResponse.ok) {
+          throw new Error('No se pudo descargar el audio anonimizado');
+        }
+
+        const blob = await audioResponse.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        console.log('✅ Audio anonimizado listo para reproducción');
+        
+        setupAudioElement(blobUrl);
+        setAudioName('Audio Anonimizado');
+      } else {
+        throw new Error('No se recibió la URL del audio anonimizado');
+      }
+
+    } catch (error) {
+      console.error('❌ Error en el proceso de anonimización:', error);
+      setError(`Error: ${(error as Error).message}`);
+    } finally {
+      setIsLoading(false);
+      setProcessingStep('');
+    }
+  };
+
+  const handleProcess = async () => {
+    if (!bucketUrl) {
+      setError('No hay audio para procesar');
+      return;
+    }
+
+    setIsProcessing(true);
+    setProcessingStep('transcription');
+
+    try {
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ audioUrl: bucketUrl }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al procesar el audio');
+      }
+
+      const data = await response.json();
+      setTranscription(data);
+    } catch (error) {
+      console.error('Error al procesar:', error);
+      setError(`Error al procesar: ${(error as Error).message}`);
+    } finally {
+      setIsProcessing(false);
+      setProcessingStep('');
+    }
+  };
+
   const clearAudio = () => {
+    console.log('🧹 Limpiando estado del audio');
     if (audioElement) {
       audioElement.pause();
       URL.revokeObjectURL(audioElement.src);
@@ -64,64 +194,58 @@ export default function AudioRecorder() {
     setAudioDuration(0);
     setAudioName('');
     setIsPlaying(false);
+    setBucketUrl('');
+    setTranscription(null);
+    setError(null);
   };
 
   const setupAudioElement = (blobUrl: string) => {
-    // Limpiar el audio anterior si existe
+    console.log('🎵 Configurando nuevo elemento de audio:', blobUrl);
     if (audioElement) {
+      console.log('🔄 Limpiando audio anterior');
       audioElement.pause();
       URL.revokeObjectURL(audioElement.src);
     }
 
     const audio = new Audio(blobUrl);
     
-    // Resetear todos los estados
     setIsPlaying(false);
     setAudioProgress(0);
     
-    // Manejar la carga de metadatos
     audio.addEventListener('loadedmetadata', () => {
       if (!isNaN(audio.duration) && isFinite(audio.duration)) {
+        console.log('📊 Metadatos cargados, duración:', audio.duration);
         setAudioDuration(audio.duration);
       }
     });
 
-    // También intentar obtener la duración cuando esté listo para reproducir
     audio.addEventListener('canplay', () => {
       if (!isNaN(audio.duration) && isFinite(audio.duration)) {
+        console.log('🎵 Audio listo para reproducir, duración actualizada:', audio.duration);
         setAudioDuration(audio.duration);
       }
     });
     
-    // Actualizar el progreso
     audio.addEventListener('timeupdate', () => {
       if (!isNaN(audio.currentTime) && isFinite(audio.currentTime)) {
         setAudioProgress(audio.currentTime);
-        // También verificar la duración aquí por si acaso
-        if (audioDuration === 0 && !isNaN(audio.duration) && isFinite(audio.duration)) {
-          setAudioDuration(audio.duration);
-        }
       }
     });
     
-    // Manejar el fin de la reproducción
     audio.addEventListener('ended', () => {
+      console.log('🔚 Reproducción finalizada');
       setIsPlaying(false);
       setAudioProgress(0);
     });
 
-    // Manejar pausas
     audio.addEventListener('pause', () => {
+      console.log('⏸️ Audio pausado');
       setIsPlaying(false);
     });
 
-    // Manejar play
     audio.addEventListener('play', () => {
+      console.log('▶️ Audio reproduciendo');
       setIsPlaying(true);
-      // Verificar la duración al comenzar la reproducción
-      if (!isNaN(audio.duration) && isFinite(audio.duration)) {
-        setAudioDuration(audio.duration);
-      }
     });
     
     setAudioElement(audio);
@@ -129,7 +253,6 @@ export default function AudioRecorder() {
 
   const handleStartRecording = () => {
     clearAudio();
-    setTranscription(null);
     setShowConsentModal(true);
   };
 
@@ -141,12 +264,37 @@ export default function AudioRecorder() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      console.log('📁 Nuevo archivo seleccionado:', file.name, file.size, file.type);
+      
+      // Validar el tipo y tamaño del archivo
+      const validTypes = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/webm'];
+      if (!validTypes.includes(file.type) && !file.type.startsWith('audio/')) {
+        setError('Tipo de archivo no soportado. Por favor, sube un archivo de audio (WAV, MP3, M4A).');
+        event.target.value = '';
+        return;
+      }
+      
+      // Tamaño máximo: 10MB
+      const maxSize = 10 * 1024 * 1024;
+      if (file.size > maxSize) {
+        setError('El archivo es demasiado grande. El tamaño máximo es 10MB.');
+        event.target.value = '';
+        return;
+      }
+      
+      // Limpiar completamente el estado actual
       clearAudio();
+      setError(null);
+      
+      // Procesar el archivo inmediatamente
       setAudioFile(file);
       setAudioName(file.name);
-      const blobUrl = URL.createObjectURL(file);
-      setupAudioElement(blobUrl);
-      setTranscription(null);
+      handleUpload(file);
+      
+      // Resetear el valor del input para permitir seleccionar el mismo archivo nuevamente
+      if (event.target.value) {
+        event.target.value = '';
+      }
     }
   };
 
@@ -163,110 +311,10 @@ export default function AudioRecorder() {
     }
   };
 
-  const handleSubmit = async () => {
-    console.log('handleSubmit iniciado');
-    console.log('Estado del audioFile:', audioFile ? `Archivo presente (${audioFile.name})` : 'No hay archivo');
-
-    if (!audioFile) return;
-
-    setIsLoading(true);
-    setError(null);
-    setProcessingStep('upload');
-    
-    try {
-      const formData = new FormData();
-      formData.append('audio', audioFile);
-
-      const uploadResponse = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json();
-        throw new Error(`Error al subir el archivo: ${errorData.error || uploadResponse.statusText}`);
-      }
-
-      const uploadData = await uploadResponse.json();
-      const audioUrl = uploadData.url;
-      
-      console.log(`Archivo subido exitosamente: ${audioUrl}`);
-      
-      setTranscription({
-        status: 'uploaded',
-        transcription: {
-          doctor: [],
-          patient: []
-        },
-        summary: "",
-        message: 'Archivo subido exitosamente',
-      });
-      
-      setProcessingStep('transcription');
-      console.log('Iniciando transcripción...');
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const transcribeResponse = await fetch('/api/transcribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ audioUrl: audioUrl }),
-      });
-      
-      if (!transcribeResponse.ok) {
-        const errorData = await transcribeResponse.json();
-        throw new Error(`Error en la transcripción: ${errorData.error || transcribeResponse.statusText}`);
-      }
-      
-      setProcessingStep('template');
-      console.log('Generando resumen clínico...');
-      
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const transcriptionData = await transcribeResponse.json();
-      console.log('Procesamiento completo:', transcriptionData);
-      
-      setTranscription({
-        ...transcriptionData,
-        status: 'completed'
-      });
-      
-      setIsLoading(false);
-      setProcessingStep('');
-      
-    } catch (error) {
-      console.error('Error completo:', error);
-      setError(`Error: ${(error as Error).message}`);
-      setTranscription(null);
-      setIsLoading(false);
-      setProcessingStep('');
-    }
-  };
-
-  const handleInitialProcessing = async () => {
-    setIsLoading(true);
-    // Simular procesamiento inicial
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsLoading(false);
-    setShowAnonymizeStep(true);
-  };
-
-  const handleAnonymize = async () => {
-    setIsAnonymizing(true);
-    // Simular procesamiento de anonimización
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsAnonymizing(false);
-    setShowAnonymizeStep(false);
-    // Ejecutar el proceso real
-    handleSubmit();
-  };
-
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       <div className="lg:w-1/4">
-        <div className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+        <div className="backdrop-blur-sm bg-white/50 rounded-xl p-6 shadow-lg border border-gray-100">
           <h2 className="text-xl font-semibold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600 inline-block">
             Grabación de Audio
           </h2>
@@ -275,7 +323,7 @@ export default function AudioRecorder() {
             <AudioControls
               status={status}
               isPlaying={isPlaying}
-              hasAudio={!!audioElement}
+              hasAudio={false}
               onStartRecording={handleStartRecording}
               onStopRecording={stopRecording}
               onTogglePlayback={togglePlayback}
@@ -288,105 +336,168 @@ export default function AudioRecorder() {
               </div>
             )}
 
-            {audioElement && status !== 'recording' && (
-              <AudioProgress 
-                isPlaying={isPlaying}
-                duration={audioDuration}
-                currentTime={audioProgress}
-                audioName={audioName}
-                onDelete={clearAudio}
-              />
-            )}
-
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div className="border-t border-gray-200 pt-6">
               <FileUpload onFileUpload={handleFileUpload} />
             </div>
-
-            {audioFile && !showAnonymizeStep && !isLoading && !transcription && (
-              <div className="flex justify-center pt-4">
-                <button
-                  type="button"
-                  onClick={handleInitialProcessing}
-                  className="button-hover-effect flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full hover:from-green-600 hover:to-emerald-700 transition-all shadow-md disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 text-sm cursor-pointer"
-                >
-                  <span className="font-medium">Procesar Audio</span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
       <div className="lg:w-3/4">
-        <div className="backdrop-blur-sm bg-white/50 dark:bg-slate-800/50 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 sticky top-4 h-full flex flex-col justify-center">
+        <div className="backdrop-blur-sm bg-white/50 rounded-xl p-6 shadow-lg border border-gray-100 min-h-[65vh] flex flex-col justify-center">
           {status === 'recording' ? (
-            <RecordingAnimation />
+            <div className="flex items-center justify-center h-full">
+              <RecordingAnimation />
+            </div>
           ) : isLoading ? (
-            <ProcessingAnimation currentStep={processingStep} />
-          ) : showAnonymizeStep ? (
-            <div className="flex flex-col items-center justify-center space-y-6">
-              <div className="text-center space-y-4">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="rounded-full bg-gradient-to-r from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 p-3">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      className="h-8 w-8 text-violet-600 dark:text-violet-400" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200">
-                    Anonimización de Audio
-                  </h3>
+            <div className="flex items-center justify-center h-full">
+              <ProcessingAnimation currentStep="anonymization" />
+              {error && (
+                <div className="absolute bottom-4 mx-auto max-w-md p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
+                  <p className="text-sm">{error}</p>
+                  <button 
+                    onClick={() => {
+                      clearAudio();
+                      setError(null);
+                      setIsLoading(false);
+                    }}
+                    className="mt-2 px-3 py-1 bg-red-200 text-red-700 hover:bg-red-300 rounded-md text-xs font-medium transition-colors"
+                  >
+                    Reintentar
+                  </button>
                 </div>
-                <p className="text-slate-600 dark:text-slate-400 max-w-md">
-                  Antes de continuar con la transcripción, nuestro modelo se encargará de anonimizar cualquier información sensible o personal que pueda contener el audio.
-                </p>
-              </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={handleAnonymize}
-                  disabled={isAnonymizing}
-                  className="cursor-pointer flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg hover:from-violet-700 hover:to-indigo-700 transition-all shadow-md group disabled:opacity-50"
-                >
-                  {isAnonymizing ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="font-medium">Anonimizando...</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-5 w-5 transition-transform group-hover:scale-110" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-                      </svg>
-                      <span className="font-medium">Anonimizar Audio</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400 italic">
-                Este paso es necesario para proteger la privacidad de los pacientes
-              </p>
+              )}
             </div>
           ) : (
-            <TranscriptionDisplay
-              isLoading={isLoading}
-              error={error}
-              transcription={transcription}
-              hasAudioFile={!!audioFile}
-            />
+            <div className="flex flex-col">
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
+                  <p className="text-sm">{error}</p>
+                  <button 
+                    onClick={() => setError(null)}
+                    className="mt-2 px-3 py-1 bg-red-200 text-red-700 hover:bg-red-300 rounded-md text-xs font-medium transition-colors"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              )}
+              
+              {!audioElement && !transcription && (
+                <div className="flex flex-col items-center justify-center flex-1 space-y-6">
+                  <div className="rounded-full bg-blue-100 p-4">
+                    <MessageCircleMore className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-2xl font-semibold text-gray-900 mb-2">
+                      Bienvenido a la Transcripción Médica
+                    </h3>
+                    <p className="text-gray-600">
+                      Graba una conversación o sube un archivo de audio para comenzar
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {audioElement && !isProcessing && !transcription && (
+                <div className="flex flex-col items-center justify-center h-full py-8">
+                  <div className="w-full max-w-md bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-gray-100 p-8">
+                    
+                    <div className="flex justify-center mb-6">
+                      <div className="p-4 bg-teal-50 rounded-full">
+                        <Music className="w-10 h-10 text-teal-500" />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-5 mb-8">
+                      <div className="flex items-center gap-2">
+                        <div className={`p-2 rounded-full ${isPlaying ? 'bg-teal-100' : 'bg-gray-100'}`}>
+                          <Music className={`w-4 h-4 ${isPlaying ? 'text-teal-600' : 'text-gray-500'}`} />
+                        </div>
+
+                        <p className="text-sm font-medium text-gray-700 truncate">{audioName || 'Audio Anonimizado'}</p>
+
+                        <button
+                          onClick={clearAudio}
+                          type="button"
+                          className="p-1.5 rounded-full hover:bg-red-100 transition-colors group ml-auto"
+                          aria-label="Eliminar audio"
+                        >
+                          <X className="w-4 h-4 text-red-500 group-hover:text-red-600" />
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                          {/* Fondo de la barra de progreso */}
+                          <div className="absolute inset-0 bg-gradient-to-r from-gray-200/50 to-gray-300/50"></div>
+
+                          {/* Barra de progreso */}
+                          <div
+                            className="absolute h-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-300 ease-in-out"
+                            style={{ width: `${audioDuration > 0 ? (audioProgress / audioDuration) * 100 : 0}%` }}
+                          >
+                            {/* Línea brillante superior */}
+                            <div className="absolute top-0 left-0 right-0 h-[1px] bg-white/30"></div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>{formatTime(audioProgress)}</span>
+                          <span>{formatTime(audioDuration)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-center items-center gap-4">
+                      <button
+                        onClick={togglePlayback}
+                        className={`button-hover-effect flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gradient-to-r ${isPlaying ? 'from-teal-600 to-cyan-700' : 'from-teal-500 to-cyan-600'} text-white rounded-full hover:from-teal-600 hover:to-cyan-700 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50 cursor-pointer`}
+                      >
+                        <div className="bg-white/20 rounded-full p-1">
+                          {isPlaying ? (
+                            <Pause className="w-3.5 h-3.5" />
+                          ) : (
+                            <Play className="w-3.5 h-3.5" />
+                          )}
+                        </div>
+                        <span className="font-medium text-xs">
+                          {isPlaying ? 'Pausar' : 'Reproducir'} 
+                        </span>
+                      </button>
+                      
+                      <button
+                        onClick={handleProcess}
+                        className="button-hover-effect flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-violet-500 to-indigo-600 text-white rounded-full hover:from-violet-600 hover:to-indigo-700 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-opacity-50 cursor-pointer"
+                      >
+                        <div className="bg-white/20 rounded-full p-1">
+                          <FileText className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-medium text-xs">Procesar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!isProcessing && !transcription && audioElement && (
+                <></>
+              )}
+
+              {isProcessing && (
+                <div className="flex items-center justify-center h-full">
+                  <ProcessingAnimation currentStep={processingStep} />
+                </div>
+              )}
+
+              {transcription && (
+                <TranscriptionDisplay
+                  isLoading={isLoading}
+                  error={error}
+                  transcription={transcription}
+                  hasAudioFile={!!audioFile}
+                />
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -398,4 +509,4 @@ export default function AudioRecorder() {
       />
     </div>
   );
-} 
+}

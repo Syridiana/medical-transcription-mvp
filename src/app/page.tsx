@@ -24,7 +24,7 @@ export default function Home() {
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-6 mb-6">
             <div className="relative inline-block">
-              <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl blur-xl opacity-50"></div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl blur-md opacity-40"></div>
               <div className="relative px-8 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl text-white">
                 <h1 className="text-5xl font-bold tracking-tight inline-flex items-center">
                   <div className="relative h-10 w-10 mr-1">

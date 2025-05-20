@@ -18,12 +18,12 @@ interface ConsentModalProps {
 export function ConsentModal({ isOpen, onClose, onConsent }: ConsentModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] border-violet-200 dark:border-violet-800">
+      <DialogContent className="sm:max-w-[425px] border-violet-200">
         <DialogHeader>
           <DialogTitle className="bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-indigo-600">
             Autorización de Grabación de Audio
           </DialogTitle>
-          <div className="mt-4 space-y-4 text-sm text-slate-600 dark:text-slate-300">
+          <div className="mt-4 space-y-4 text-sm text-slate-600">
             <p>
               Para proceder con la grabación de audio, necesitamos su autorización explícita.
             </p>
@@ -44,7 +44,7 @@ export function ConsentModal({ isOpen, onClose, onConsent }: ConsentModalProps) 
           <Button 
             variant="outline"
             onClick={onClose}
-            className="cursor-pointer border-violet-200 dark:border-violet-800 hover:bg-violet-50 dark:hover:bg-violet-900/30"
+            className="cursor-pointer border-violet-200 hover:bg-violet-50"
           >
             Cancelar
           </Button>
