@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       });
       
       if (!anonymizeResponse.ok) {
-        throw new Error(`Error en la respuesta de anonymize: ${anonymizeResponse.status}`);
+        throw new Error(`Error en la respuesta de anonymize: ${anonymizeResponse.status} ${anonymizeResponse.statusText}`);
       }
       
       const anonymizeData = await anonymizeResponse.json();
