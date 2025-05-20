@@ -44,7 +44,7 @@ export default function Home() {
               </div>
             </div>
             <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-500 backdrop-blur-sm">
-              por
+              by
             </span>
             <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-md flex items-center">
               <div className="relative h-12 w-32">

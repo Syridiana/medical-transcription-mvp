@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       }
       
       const anonymizeData = await anonymizeResponse.json();
-      console.log('Anonymized audio:', anonymizeData);
+      console.log('Anonymized audio:', anonymizeData.output.audio);
       
       // Step 2: Transcribe 
       console.log('Step 2: Transcribing audio...');
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           "step": "transcribe",
-          "audio": audioUrl // We could use anonymizeData.audio for the anonymized version
+          "audio": anonymizeData.output.audio // We could use anonymizeData.audio for the anonymized version
         }),
       });
       
