@@ -208,12 +208,7 @@ export function TranscriptionDisplay({  error, transcription, hasAudioFile }: Tr
           ) : (
             /* Mostrar la transcripción completa cuando los arrays están vacíos o inválidos */
             <div className="space-y-6">
-              <div className="flex justify-center mb-4">
-                <div className="px-4 py-2 bg-amber-100 text-amber-700 text-sm rounded-full font-medium">
-                  Mostrando transcripción sin formato de chat
-                </div>
-              </div>
-              
+             
               <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                 {transcription.transcription?.full_transcription ? (
                   <MarkdownTranscription content={transcription.transcription.full_transcription} />
