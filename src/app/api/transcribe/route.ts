@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           "step": "transcribe",
-          "audio": anonymizeData.output.audio // We could use anonymizeData.audio for the anonymized version
+          "audio": anonymizeData.output.audio 
         }),
       });
       
@@ -56,8 +56,7 @@ export async function POST(request: NextRequest) {
       }
       
       const transcribeData = await transcribeResponse.json();
-      console.log('Transcription received:', transcribeData);
-      
+  
       // Transform the API response data to get the actual transcription
       const transformedTranscribeData = transformAPIResponse(transcribeData);
       
@@ -83,10 +82,35 @@ export async function POST(request: NextRequest) {
       }
       
       const validateData = await validatedResponse.json();
-      const validatedTranscription = validateData.output.validated_transcription as string;
+ 
+      // Extraer la transcripción validada, manejando diferentes estructuras posibles
+      let validatedTranscription = '';
+      if (validateData.output && validateData.output.validated_transcription) {
+        // Estructura anidada { output: { validated_transcription: "..." } }
+        validatedTranscription = validateData.output.validated_transcription;
+      } else if (validateData.validated_transcription) {
+        // Estructura plana { validated_transcription: "..." }
+        validatedTranscription = validateData.validated_transcription;
+      } else {
+        // Fallback a la transcripción original si no se encuentra una versión validada
+        validatedTranscription = rawTranscription;
+      }
       
-      console.log('Transcription Validated Data:', validateData);
-      console.log('Transcription Transformed Data:', validatedTranscription);
+      // Extraer los errores de corrección, manejando diferentes estructuras posibles
+      let transcriptionErrors = [];
+      if (validateData.output && validateData.output.errores) {
+        // Estructura anidada { output: { errores: [...] } }
+        transcriptionErrors = validateData.output.errores;
+      } else if (validateData.errores) {
+        // Estructura plana { errores: [...] }
+        transcriptionErrors = validateData.errores;
+      }
+
+      // Asegurarse de que transcriptionErrors sea siempre un array
+      if (!Array.isArray(transcriptionErrors)) {
+        console.log('transcriptionErrors no es un array, inicializando como array vacío');
+        transcriptionErrors = [];
+      }
 
 
       // Step 4: Generate template from transcription
@@ -107,7 +131,6 @@ export async function POST(request: NextRequest) {
       }
       
       const templateData = await templateResponse.json();
-      console.log('Template generated:', templateData);
       
       // Transform the template response
       const transformedTemplateData = transformAPIResponse(templateData);
@@ -121,8 +144,10 @@ export async function POST(request: NextRequest) {
         summary: transformedTemplateData.template as string,
         template: transformedTemplateData.template as string,
         raw_transcription: rawTranscription,
+        errors: transcriptionErrors,
         status: 'completed',
       };
+      
       
       return NextResponse.json({
         anonymizedAudioUrl,
@@ -130,6 +155,7 @@ export async function POST(request: NextRequest) {
         summary: finalResponse.summary,
         template: finalResponse.template,
         raw_transcription: finalResponse.raw_transcription,
+        errors: finalResponse.errors,
         status: finalResponse.status
       });
       
@@ -144,6 +170,7 @@ export async function POST(request: NextRequest) {
         },
         summary: "",
         status: 'error',
+        errors: [], // Asegurar que siempre se devuelva un array de errores vacío
         message: 'No se pudo conectar con el servicio de transcripción: ' + (fetchError as Error).message
       };
       
@@ -171,7 +198,7 @@ function transformAPIResponse(apiResponse: Record<string, unknown>): Record<stri
 }
 
 // Helper function to parse the transcription into doctor and patient segments
-function parseTranscription(transcription: string): { doctor: string[]; patient: string[] } {
+function parseTranscription(transcription: string): { doctor: string[]; patient: string[]; full_transcription?: string } {
   if (!transcription) {
     return { doctor: [], patient: [] };
   }
@@ -195,7 +222,7 @@ function parseTranscription(transcription: string): { doctor: string[]; patient:
       // Save previous message if exists
       if (currentSpeaker && currentText.trim()) {
         messages.push({
-          speaker: currentSpeaker,
+          speaker: currentSpeaker as Speaker,
           text: currentText.trim()
         });
       }
@@ -212,7 +239,7 @@ function parseTranscription(transcription: string): { doctor: string[]; patient:
       // Save previous message if exists
       if (currentSpeaker && currentText.trim()) {
         messages.push({
-          speaker: currentSpeaker,
+          speaker: currentSpeaker as Speaker,
           text: currentText.trim()
         });
       }
@@ -233,12 +260,11 @@ function parseTranscription(transcription: string): { doctor: string[]; patient:
   // Don't forget to add the last message
   if (currentSpeaker && currentText.trim()) {
     messages.push({
-      speaker: currentSpeaker,
+      speaker: currentSpeaker as Speaker,
       text: currentText.trim()
     });
   }
   
-  console.log('Parsed sequential messages:', messages);
   
   // Now transform sequential messages to parallel doctor/patient arrays
   // This preserves the conversation flow in the UI
@@ -284,7 +310,16 @@ function parseTranscription(transcription: string): { doctor: string[]; patient:
     lastSpeaker = message.speaker;
   }
   
-  console.log('Final parsed structure:', result);
+ 
+  // Si ambos arrays están vacíos o alguno está vacío, incluir la transcripción completa
+  if (result.doctor.length === 0 || result.patient.length === 0 || 
+      (result.doctor.length === 1 && result.doctor[0] === '') || 
+      (result.patient.length === 1 && result.patient[0] === '')) {
+    return {
+      ...result,
+      full_transcription: transcription
+    };
+  }
   
   return result;
 } 

@@ -172,6 +172,28 @@ export default function AudioRecorder() {
       }
 
       const data = await response.json();
+      console.log('Respuesta completa de transcripción:', data);
+      
+      // Verificar si hay correcciones para informar al usuario
+      if (data.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+        console.log(`Se encontraron ${data.errors.length} correcciones en la transcripción`);
+        
+        // Si hay correcciones con impacto médico, mostrar un aviso
+        const medicalImpactErrors = data.errors.filter((err: {impacto_medico: boolean}) => err.impacto_medico);
+        if (medicalImpactErrors.length > 0) {
+          const message = `Se han realizado ${data.errors.length} correcciones (${medicalImpactErrors.length} con posible impacto médico). Revise la pestaña "Correcciones".`;
+          setError(message);
+          setTimeout(() => setError(null), 10000); // Limpiar el mensaje después de 10 segundos
+        }
+      } else {
+        console.log('No se encontraron correcciones en la transcripción o el formato es incorrecto');
+        
+        // Asegurarse de que errors sea un array vacío si no existe o no es un array
+        if (!data.errors || !Array.isArray(data.errors)) {
+          data.errors = [];
+        }
+      }
+      
       setTranscription(data);
     } catch (error) {
       console.error('Error al procesar:', error);
