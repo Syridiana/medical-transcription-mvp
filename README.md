@@ -29,12 +29,6 @@ This project uses Google Cloud Storage for saving audio recordings. For detailed
 - Process audio files for transcription
 - Secure audio storage with proper authentication
 
-### Required Environment Variables
-Create a `.env.local` file with:
-```
-GOOGLE_CLOUD_PROJECT_ID=your-project-id
-GCS_BUCKET_NAME=kiki-medicina
-```
 
 ## Learn More
 

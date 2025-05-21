@@ -63,9 +63,34 @@ export async function POST(request: NextRequest) {
       
       // Store the raw transcription
       const rawTranscription = transformedTranscribeData.transcription as string;
-      
-      // Step 3: Generate template from transcription
+
+      // Step 3: Validate and correct transcription
       console.log('Step 3: Generating template...');
+      const validatedResponse = await fetch('https://scriba-bmenmapcaa-uc.a.run.app/controller', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          "step": "validate",
+          "audio": anonymizeData.output.audio,
+          "transcription": rawTranscription
+        }),
+      });
+
+      if (!validatedResponse.ok) {
+        throw new Error(`Error en la respuesta de validate: ${validatedResponse.status}`);
+      }
+      
+      const validateData = await validatedResponse.json();
+      const validatedTranscription = validateData.output.validated_transcription as string;
+      
+      console.log('Transcription Validated Data:', validateData);
+      console.log('Transcription Transformed Data:', validatedTranscription);
+
+
+      // Step 4: Generate template from transcription
+      console.log('Step 4: Generating template...');
       const templateResponse = await fetch('https://scriba-bmenmapcaa-uc.a.run.app/controller', {
         method: 'POST',
         headers: {
@@ -73,7 +98,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           "step": "template",
-          "transcription": rawTranscription
+          "transcription": validatedTranscription
         }),
       });
       
@@ -100,7 +125,6 @@ export async function POST(request: NextRequest) {
       };
       
       return NextResponse.json({
-        status: 'success',
         anonymizedAudioUrl,
         transcription: finalResponse.transcription,
         summary: finalResponse.summary,

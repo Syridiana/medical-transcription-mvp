@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Scriba - Transcripción médica con IA",
   description: "Sistema de transcripción automática para consultas médicas con IA",
+  icons: {
+    icon: "/scribe-logo.ico",
+    shortcut: "/scribe-logo.ico",
+    apple: "/scribe-logo.ico",
+  },
 };
 
 export default function RootLayout({
